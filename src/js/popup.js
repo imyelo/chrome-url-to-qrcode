@@ -1,41 +1,45 @@
 (function () {
-  var Emitter = function (namespace) {
-    this._namespace = namespace;
-    return this;
-  };
-  Emitter.prototype.send = function (action, data, response) {
-    var actionName = this._namespace + ':' + action;
-    var query = {
-      active: true, currentWindow: true
-    };
-    if (arguments.length === 2) {
-      response = data;
-      data = {};
+
+  var $qrcode = document.getElementById('qrcode');
+  var $description = document.getElementById('description');
+  var $input = document.getElementById('input');
+
+  var empty = function (element) {
+    while (element.firstChild) {
+      element.removeChild(element.firstChild);
     }
-    chrome.tabs.query(query, function (tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: actionName,
-        data: data
-      }, response);
+  };
+  
+  var createQRCode = function (text) {
+    empty($qrcode);
+    return new QRCode('qrcode',  {
+      text: text,
+      width: 150,
+      height: 150,
+      colorDark : '#333',
+      colorLight : '#fff',
+      correctLevel : QRCode.CorrectLevel.H
     });
   };
 
-  (function () {
-
+  try {
     chrome.windows.getCurrent(function(w) {
       chrome.tabs.getSelected(w.id, function (response) {
-        var qrcode = new QRCode('qrcode',  {
-          text: response.url,
-          width: 150,
-          height: 150,
-          colorDark : '#333',
-          colorLight : '#fff',
-          correctLevel : QRCode.CorrectLevel.H
-        });
-        document.getElementById('description').textContent = response.url;
+        createQRCode(response.url);
+        $description.textContent = response.url;
       });
     });
+  } catch (e) {}
 
-  })();
+  $description.onfocus = function () {
+    this.select();
+  };
+
+  $description.onchange = $description.onkeydown = $description.onmousedown = function (e) {
+    if (e && e.which === 13) {
+      this.blur();
+    }
+    createQRCode(this.textContent);
+  };
 
 })();
